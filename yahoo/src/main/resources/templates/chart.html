@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Stock Candle Chart</title>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/stock.js"></script>
+    <script src="https://code.highcharts.com/modules/candlestick.js"></script>
+</head>
+<body>
+    <h1>Stock Candle Chart for AAPL</h1>
+    <div id="stockChart" style="width: 500px; height: 600px;"></div>
+
+    <script type="text/javascript">
+        const symbol = 'AAPL'; // Fixed stock symbol
+
+        fetch(`/priceline/candle/${symbol}`)
+            .then(response => response.json())
+            .then(json => {
+                if (json.message === "ok" && json.data.length > 0) {
+                    const priceData = json.data[0].points;
+                    const processedData = priceData.map(point => [
+                        new Date(point.dateTime).getTime(),
+                        point.price.open,
+                        point.price.high,
+                        point.price.low,
+                        point.price.close
+                    ]);
+
+                    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+                    Highcharts.setOptions({
+                        time: {
+                            timezone: timezone
+                        }
+                    });
+
+                    Highcharts.stockChart('stockChart', {
+                        rangeSelector: {
+                            selected: 1
+                        },
+                        title: {
+                            text: `${json.data[0].symbol} Stock Price`
+                        },
+                        series: [{
+                            type: 'candlestick',
+                            name: 'Price',
+                            data: processedData,
+                            tooltip: {
+                                valueDecimals: 2
+                            }
+                        }]
+                    });
+                } else {
+                    console.error('No data available or message not ok');
+                }
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+</body>
+</html>
